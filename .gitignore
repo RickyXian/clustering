@@ -1,0 +1,4 @@
+*.pyc
+.DS_Store
+feature_vector_map.pickle
+
