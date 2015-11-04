@@ -1,4 +1,5 @@
 *.pyc
 .DS_Store
 feature_vector_map.pickle
-
+reducedFeatureVectorMatrix.pkl
+document_matrix_1000.pickle
