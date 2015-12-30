@@ -6,6 +6,7 @@ from collections import OrderedDict
 import cPickle
 import os
 import sys
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,37 +42,83 @@ def get_entropy_clustering(clustering):
 
 def run_tests_with_metric(vectors, distance_metric):
     '''Runs the suite of tests using the given distance metric.'''
-    xs = range(2, 40)
-    ys = []
-    for k in range(2, 40):
+    xs = range(2, 41)
+    es = []  # Entropy values
+    vs = []  # Variance values
+    ts = []  # Elapsed time values
+    for k in xs:
         print 'Running %d-Means' % k
-        clustering = run_kmeans(k, vectors, distance_metric)
-        ys.append(entropy(get_entropy_clustering(clustering)))
-    return (xs, ys)
+        start = time.time()
+        clustering, iterations = run_kmeans(k, vectors, distance_metric)
+
+        # Calculate the statistics we are graphing
+        ts.append((time.time() - start) / iterations)
+        e_clustering = get_entropy_clustering(clustering)
+        es.append(entropy(e_clustering))
+        mean = float(reduce(lambda x, y: x + sum(y.values()), e_clustering, 0.0)) / len(clustering)
+        var = float(sum(map(lambda x: (sum(x.values()) - mean)**2, e_clustering))) / len(clustering)
+        vs.append(var)
+    return (xs, es, vs, ts)
 
 def run_test_suite(vectors):
-    '''Runs the suite of tests on the given vectors.'''
+    '''Runs the suite of tests on the given vectors and graphs the results.'''
+
+    test_start = time.time()
 
     # Test suite using euclidean distance.
     print 'Running tests using euclidean distance.'
-    xs, ys = run_tests_with_metric(vectors, euclidean_distance)
-    ax = plt.subplot(211)
-    plt.title('K-Means Entropy using Euclidean Distance')
-    plt.xlabel('K')
+    xs, es, vs, ts = run_tests_with_metric(vectors, euclidean_distance)
+    with open('results/euclidean1000.pkl', 'w') as f:
+        cPickle.dump((xs, es, vs, ts), f)
+
+    # Graph the entropy results
+    ax = plt.subplot(321)
+    plt.title('K-Means Entropy - Euclidean Distance')
     plt.ylabel('Entropy')
-    plt.bar(xs, ys)
+    plt.plot(xs, es, 'bo-')
+
+    # Graph the variance results
+    ax = plt.subplot(323)
+    plt.title('K-Means Cluster Variance - Euclidean Distance')
+    plt.ylabel('Variance')
+    plt.plot(xs, vs, 'bo-')
+
+    # Graph the execution time
+    ax = plt.subplot(325)
+    plt.title('K-Means Runtime Per Iteration - Euclidean Distance')
+    plt.ylabel('Time (s)')
+    plt.plot(xs, ts, 'bo-')
 
     # Test suite using cosine distance.
     print 'Running tests using cosine distance.'
-    xs, ys = run_tests_with_metric(vectors, cosine_distance)
-    plt.subplot(212)
-    plt.title('K-Means Entropy using Cosine Distance')
-    plt.xlabel('K')
-    plt.ylabel('Entropy')
-    plt.bar(xs, ys)
+    xs, es, vs, ts = run_tests_with_metric(vectors, cosine_distance)
+    with open('results/cosine1000.pkl', 'w') as f:
+        cPickle.dump((xs, es, vs, ts), f)
 
-    plt.tight_layout()
+    # Graph the entropy results
+    ax = plt.subplot(322)
+    plt.title('K-Means Entropy - Cosine Distance')
+    plt.ylabel('Entropy')
+    plt.plot(xs, es, 'bo-')
+
+    # Graph the variance results
+    ax = plt.subplot(324)
+    plt.title('K-Means Cluster Variance - Cosine Distance')
+    plt.ylabel('Variance')
+    plt.plot(xs, vs, 'bo-')
+
+    # Graph the execution time
+    ax = plt.subplot(326)
+    plt.title('K-Means Runtime Per Iteration - Cosine Distance')
+    plt.ylabel('Time (s)')
+    plt.plot(xs, ts, 'bo-')
+
+    test_end = time.time()
+
+    #plt.tight_layout()
+    plt.savefig('results/plots.png')
     plt.show()
+    return test_end - test_start
 
 def main():
     '''The main entry point for the program.'''
@@ -92,10 +139,13 @@ def main():
                 vectors.append([vector[0], clazz, np_vector])
 
     # Run the tests suite.
-    run_test_suite(vectors)
+    elapsed = run_test_suite(vectors)
+    print 'Elapsed Time: %f hours' % (elapsed / 60.0 / 60.0)
 
 if __name__ == '__main__':
     try:
         sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit('\nReceived keyboard interrupt...aborting.')
     except Exception as e:
         sys.exit(str(e))

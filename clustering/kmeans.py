@@ -63,4 +63,4 @@ def run_kmeans(num_centroids, data, distance):
         centers = _recalculate_centers(new_partitioning, data[random.randint(0, len(data)-1)])
 
     # A mapping from center location -> points in cluster around the centroid.
-    return [points for num, points in new_partitioning.iteritems()]
+    return ([points for num, points in new_partitioning.iteritems()], i-1)

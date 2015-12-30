@@ -6,7 +6,6 @@ import math
 
 def entropy(clustering):
     '''Calculates the entropy of a given clustering.'''
-    print clustering
 
     # Calculate the total number of points in the clustering.
     total_points = float(reduce(lambda x, y: x + sum(y.values()), clustering, 0))
